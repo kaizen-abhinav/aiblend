@@ -1,0 +1,26 @@
+{
+  "video_filename": "shoplifting1.mp4",
+  "total_video_frames": 145,
+  "is_anomaly_sequence": true,
+  "global_sequence_description": "Surveillance footage overlooking an electronics display table where a synthetic subject takes a boxed smartphone and hides it under their jacket.",
+  "chronological_sequence_segments": [
+    {
+      "segment_index": 1,
+      "frame_range": "0-48",
+      "temporal_phase": "First 33% - Sequence Setup",
+      "scene_description": "The subject stands at a retail display table, holding a white rectangular smartphone box with both hands at waist height while examining the product."
+    },
+    {
+      "segment_index": 2,
+      "frame_range": "49-96",
+      "temporal_phase": "Second 33% - Transition Phase",
+      "scene_description": "The subject swiftly moves the box upward toward their chest, using both hands to push the box directly inside the front opening of their plaid jacket."
+    },
+    {
+      "segment_index": 3,
+      "frame_range": "97-144",
+      "temporal_phase": "Third 33% - Resolution / Post-Action",
+      "scene_description": "The subject withdraws their hands, adjusting the outer fabric of their plaid jacket to ensure the box is fully covered, and stands casually at the table with empty hands."
+    }
+  ]
+}

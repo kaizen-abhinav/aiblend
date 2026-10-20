@@ -40,6 +40,25 @@
                     <i data-lucide="film"></i>
                     <span>CCTV Demo</span>
                 </button>
+                <div class="dataset-dropdown-container">
+                    <button class="source-pill" id="btn-src-dataset" onclick="toggleDatasetMenu(event)">
+                        <i data-lucide="folder-search"></i>
+                        <span id="dataset-pill-label">CCTV Dataset</span>
+                        <i data-lucide="chevron-down" style="width:14px;height:14px;margin-left:3px;"></i>
+                    </button>
+                    <div class="dataset-dropdown-menu" id="dataset-dropdown" style="display: none;">
+                        <div class="dropdown-header">
+                            <span>SURVEILLANCE BENCHMARK</span>
+                            <label class="auto-cycle-label" title="Continuously cycle through dataset videos">
+                                <input type="checkbox" id="auto-cycle-checkbox" onchange="toggleAutoCycle(this.checked)">
+                                <span>Auto-Cycle</span>
+                            </label>
+                        </div>
+                        <div class="dataset-items-list" id="dataset-items-list">
+                            <!-- Populated via JavaScript -->
+                        </div>
+                    </div>
+                </div>
                 <button class="source-pill" id="btn-src-webcam" onclick="switchVideoSource('webcam')">
                     <i data-lucide="camera"></i>
                     <span>Live Webcam</span>
@@ -196,6 +215,10 @@
                     <span>LOSS PREVENTION INCIDENT LOG & EVIDENCE SNAPSHOTS</span>
                 </div>
                 <div class="incidents-actions">
+                    <button class="btn-action" onclick="openEvaluationModal()">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Dataset Report</span>
+                    </button>
                     <button class="btn-action" onclick="exportIncidents('csv')">
                         <i data-lucide="download"></i>
                         <span>Export CSV</span>
@@ -258,6 +281,20 @@
                 <img id="modal-img" src="" alt="Incident Frame">
             </div>
             <div class="modal-details" id="modal-details">
+                <!-- Injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for CCTV Dataset Evaluation Report -->
+    <div class="modal-backdrop" id="evaluation-modal" onclick="closeEvaluationModal()">
+        <div class="modal-card evaluation-modal-card" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeEvaluationModal()">&times;</button>
+            <div class="modal-header">
+                <h3>CCTV Shoplifting Dataset Evaluation Report</h3>
+                <span id="eval-meta">8 Surveillance Benchmark Videos</span>
+            </div>
+            <div class="modal-body-scrollable" id="evaluation-modal-body">
                 <!-- Injected dynamically -->
             </div>
         </div>

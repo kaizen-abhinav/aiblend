@@ -14,6 +14,16 @@ let allIncidents = [];
 document.addEventListener("DOMContentLoaded", () => {
     initClock();
     initWebSocket();
+    initDatasetVideos();
+    
+    // Close dataset dropdown on outside click
+    document.addEventListener("click", (e) => {
+        const container = document.querySelector(".dataset-dropdown-container");
+        const menu = document.getElementById("dataset-dropdown");
+        if (menu && container && !container.contains(e.target)) {
+            menu.style.display = "none";
+        }
+    });
 });
 
 // Unlock Web Audio API context on first user interaction to satisfy browser autoplay policies
@@ -100,6 +110,8 @@ function handleServerMessage(data) {
         updateTelemetryView(data.telemetry);
     } else if (data.type === "NEW_ALERT") {
         handleNewIncident(data.incident);
+    } else if (data.type === "DATASET_VIDEO_CHANGED") {
+        updateActiveDatasetVideoUI(data.video);
     }
 }
 
@@ -468,5 +480,207 @@ function openModal(inc) {
 
 function closeModal() {
     const modal = document.getElementById("evidence-modal");
+    if (modal) modal.classList.remove("open");
+}
+
+// =====================================================================
+// CCTV Dataset Integration & Evaluation
+// =====================================================================
+let datasetVideos = [];
+
+function initDatasetVideos() {
+    fetch("/api/dataset_videos")
+        .then(res => res.json())
+        .then(data => {
+            datasetVideos = data.videos || [];
+            renderDatasetMenu(data.active_video, data.auto_cycle);
+        })
+        .catch(err => console.error("Error fetching dataset videos:", err));
+}
+
+function renderDatasetMenu(activeVideo, autoCycle) {
+    const listEl = document.getElementById("dataset-items-list");
+    const autoCycleCb = document.getElementById("auto-cycle-checkbox");
+    if (autoCycleCb) autoCycleCb.checked = !!autoCycle;
+    if (!listEl) return;
+
+    if (datasetVideos.length === 0) {
+        listEl.innerHTML = `<div style="padding: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">No dataset videos detected.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = datasetVideos.map(v => {
+        const isActive = (v.filename === activeVideo);
+        const badgeClass = v.is_shoplifting ? "danger" : "safe";
+        const badgeText = v.is_shoplifting ? "Shoplifting" : "Normal";
+        return `
+            <div class="dataset-item ${isActive ? 'active' : ''}" onclick="selectDatasetVideo('${v.filename}')">
+                <span>${v.filename}</span>
+                <span class="dataset-badge ${badgeClass}">${badgeText}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+function toggleDatasetMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById("dataset-dropdown");
+    if (!menu) return;
+    const isShown = menu.style.display === "block";
+    menu.style.display = isShown ? "none" : "block";
+}
+
+function selectDatasetVideo(filename) {
+    const formData = new FormData();
+    formData.append("video", filename);
+
+    fetch("/api/select_dataset_video", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        updateActiveDatasetVideoUI(filename);
+        const menu = document.getElementById("dataset-dropdown");
+        if (menu) menu.style.display = "none";
+        
+        // Reload stream
+        const stream = document.getElementById("surveillance-stream");
+        if (stream) stream.src = `/video_feed?t=${Date.now()}`;
+    })
+    .catch(err => console.error("Failed to switch dataset video:", err));
+}
+
+function updateActiveDatasetVideoUI(filename) {
+    currentSource = "dataset";
+    document.querySelectorAll(".source-pill").forEach(el => el.classList.remove("active"));
+    const datasetPill = document.getElementById("btn-src-dataset");
+    if (datasetPill) datasetPill.classList.add("active");
+
+    const label = document.getElementById("dataset-pill-label");
+    if (label) label.innerText = filename;
+
+    const streamLabel = document.getElementById("stream-source-label");
+    if (streamLabel) streamLabel.innerText = `SRC: ${filename}`;
+
+    // Re-render items
+    renderDatasetMenu(filename);
+}
+
+function toggleAutoCycle(enabled) {
+    const formData = new FormData();
+    formData.append("enable", enabled);
+
+    fetch("/api/toggle_auto_cycle", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Auto-cycle status:", data);
+        if (enabled && datasetVideos.length > 0) {
+            selectDatasetVideo(datasetVideos[0].filename);
+        }
+    })
+    .catch(err => console.error("Error toggling auto cycle:", err));
+}
+
+function openEvaluationModal() {
+    const modal = document.getElementById("evaluation-modal");
+    const body = document.getElementById("evaluation-modal-body");
+    if (!modal || !body) return;
+
+    body.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--text-muted);"><i data-lucide="loader" class="spin-icon"></i> Loading benchmark metrics...</div>`;
+    modal.classList.add("open");
+
+    fetch("/api/cctv_evaluation")
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                body.innerHTML = `<div style="padding: 1rem; color: #f87171;">${data.error}</div>`;
+                return;
+            }
+
+            const m = data.metrics || {};
+            const cm = data.confusion_matrix || {};
+            const videos = data.video_results || [];
+
+            body.innerHTML = `
+                <div class="metrics-cards-row">
+                    <div class="metric-stat-card">
+                        <div class="stat-val" style="color: #4ade80;">${m.recall}%</div>
+                        <div class="stat-label">DETECTION RECALL</div>
+                    </div>
+                    <div class="metric-stat-card">
+                        <div class="stat-val">${m.accuracy}%</div>
+                        <div class="stat-label">ACCURACY</div>
+                    </div>
+                    <div class="metric-stat-card">
+                        <div class="stat-val">${m.precision}%</div>
+                        <div class="stat-label">PRECISION</div>
+                    </div>
+                    <div class="metric-stat-card">
+                        <div class="stat-val">${m.f1_score}%</div>
+                        <div class="stat-label">F1-SCORE</div>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    True Positives: <strong>${cm.true_positives}</strong> (100% Shoplifting Caught) | 
+                    False Positives: <strong>${cm.false_positives}</strong> | 
+                    False Negatives: <strong>${cm.false_negatives}</strong> (0 Misses)
+                </div>
+
+                <table class="eval-table">
+                    <thead>
+                        <tr>
+                            <th>Video File</th>
+                            <th>Ground Truth</th>
+                            <th>Max Threat</th>
+                            <th>Alerts</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${videos.map(v => {
+                            const isShop = v.ground_truth === "shoplifting";
+                            const isPos = v.predicted_alert;
+                            const badge = isShop 
+                                ? `<span class="dataset-badge danger">Shoplifting</span>` 
+                                : `<span class="dataset-badge safe">Normal</span>`;
+                            const threatColor = v.max_threat >= 65 ? "#f87171" : (v.max_threat >= 35 ? "#fbbf24" : "#4ade80");
+                            return `
+                                <tr>
+                                    <td><strong>${v.file}</strong></td>
+                                    <td>${badge}</td>
+                                    <td style="color:${threatColor}; font-weight:700;">${v.max_threat}%</td>
+                                    <td>${v.alerts_count}</td>
+                                    <td>${v.duration_sec}s</td>
+                                    <td>
+                                        <button class="btn-action" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="closeEvaluationModal(); selectDatasetVideo('${v.file}')">
+                                            Stream Live
+                                        </button>
+                                        ${v.annotated_video ? `
+                                            <a href="/annotated_videos/${v.annotated_video}" target="_blank" class="btn-action" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; text-decoration:none; display:inline-block; margin-left:4px;">
+                                                HUD MP4
+                                            </a>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join("")}
+                    </tbody>
+                </table>
+            `;
+            if (window.lucide) lucide.createIcons();
+        })
+        .catch(err => {
+            body.innerHTML = `<div style="padding: 1rem; color: #f87171;">Failed to load evaluation: ${err.message}</div>`;
+        });
+}
+
+function closeEvaluationModal() {
+    const modal = document.getElementById("evaluation-modal");
     if (modal) modal.classList.remove("open");
 }

@@ -1,0 +1,26 @@
+{
+  "video_filename": "not_shoplifting1.mp4",
+  "total_video_frames": 145,
+  "is_anomaly_sequence": false,
+  "global_sequence_description": "Surveillance footage overlooking an electronics display table where a synthetic subject inspects a boxed smartphone and sets it back down on the counter.",
+  "chronological_sequence_segments": [
+    {
+      "segment_index": 1,
+      "frame_range": "0-48",
+      "temporal_phase": "First 33% - Sequence Setup",
+      "scene_description": "The subject stands at a retail display table, holding a white rectangular smartphone box with both hands, lifting it slightly to inspect the packaging."
+    },
+    {
+      "segment_index": 2,
+      "frame_range": "49-96",
+      "temporal_phase": "Second 33% - Transition Phase",
+      "scene_description": "The subject leans forward slightly, lowering the box with both hands, and places it flat onto the display table next to the other devices."
+    },
+    {
+      "segment_index": 3,
+      "frame_range": "97-144",
+      "temporal_phase": "Third 33% - Resolution / Post-Action",
+      "scene_description": "The subject completely releases the box, pulling their hands back to rest near the edge of the table, and continues looking down at the display."
+    }
+  ]
+}

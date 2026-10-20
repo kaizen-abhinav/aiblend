@@ -29,6 +29,9 @@ app = FastAPI(title="SENTINEL-CV | AI Shoplifting Detection")
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory=str(config.BASE_DIR / "static")), name="static")
 app.mount("/snapshots", StaticFiles(directory=str(config.SNAPSHOT_DIR)), name="snapshots")
+ANNOTATED_DIR = config.BASE_DIR / "data" / "annotated_cctv"
+ANNOTATED_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/annotated_videos", StaticFiles(directory=str(ANNOTATED_DIR)), name="annotated_videos")
 templates = Jinja2Templates(directory=str(config.BASE_DIR / "templates"))
 
 # Global State & Video Manager
@@ -55,6 +58,13 @@ class VideoStreamManager:
         self.all_incidents = []
         self.connected_websockets: List[WebSocket] = []
         self.main_loop: asyncio.AbstractEventLoop = None
+
+        # CCTV Shoplifting Dataset configuration
+        self.dataset_dir = config.BASE_DIR / "CCTV_Shoplifting_Dataset" / "videos"
+        self.dataset_videos = sorted([f.name for f in self.dataset_dir.glob("*.mp4")]) if self.dataset_dir.exists() else []
+        self.current_dataset_video = None
+        self.current_dataset_idx = 0
+        self.auto_cycle = False
         
         # Ensure demo video exists
         self.demo_video_path = config.DATA_DIR / "demo_shoplifting.mp4"
@@ -98,6 +108,15 @@ class VideoStreamManager:
     def switch_source(self, source_type: str, file_path: str = None):
         self._open_source(source_type, file_path)
 
+    def switch_to_dataset_video(self, video_name: str):
+        """Switch surveillance feed to a specific video in CCTV_Shoplifting_Dataset/videos."""
+        if video_name in self.dataset_videos:
+            self.current_dataset_idx = self.dataset_videos.index(video_name)
+        self.current_dataset_video = video_name
+        target = self.dataset_dir / video_name
+        self._open_source("file", str(target))
+        self.current_source_type = "dataset"
+
     def _processing_loop(self):
         """Continuous video frame acquisition, inference, and alert handling."""
         while self.running:
@@ -107,8 +126,19 @@ class VideoStreamManager:
                 
             ret, frame = self.cap.read()
             if not ret:
-                # Loop video files seamlessly
-                if self.current_source_type in ("demo", "file"):
+                # Cycle or loop videos seamlessly
+                if self.auto_cycle and self.dataset_videos and self.current_source_type in ("file", "dataset"):
+                    self.current_dataset_idx = (self.current_dataset_idx + 1) % len(self.dataset_videos)
+                    next_vid = self.dataset_videos[self.current_dataset_idx]
+                    self.current_dataset_video = next_vid
+                    self._open_source("file", str(self.dataset_dir / next_vid))
+                    self.current_source_type = "dataset"
+                    self._broadcast_event({
+                        "type": "DATASET_VIDEO_CHANGED",
+                        "video": next_vid
+                    })
+                    continue
+                elif self.current_source_type in ("demo", "file", "dataset"):
                     self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     ret, frame = self.cap.read()
                     if not ret:
@@ -127,6 +157,8 @@ class VideoStreamManager:
             now = time.time()
             annotated_frame, new_alerts, telemetry = self.detector.process_frame(frame, now)
             telemetry["source"] = self.current_source_type
+            if self.current_dataset_video and self.current_source_type == "dataset":
+                telemetry["dataset_video"] = self.current_dataset_video
             
             # Handle new alert events (save snapshots & record incident)
             for alert in new_alerts:
@@ -330,11 +362,76 @@ async def websocket_endpoint(websocket: WebSocket):
 # -------------------------------------------------------------
 @app.post("/api/switch_source")
 async def switch_source_endpoint(source: str = Form(...)):
-    """Switch active input between 'demo' and 'webcam'."""
-    if source not in ("demo", "webcam"):
+    """Switch active input between 'demo', 'webcam', and 'dataset'."""
+    if source not in ("demo", "webcam", "dataset"):
         raise HTTPException(status_code=400, detail="Invalid source")
-    stream_mgr.switch_source(source)
+    if source == "dataset":
+        first_vid = stream_mgr.dataset_videos[0] if stream_mgr.dataset_videos else None
+        if first_vid:
+            stream_mgr.switch_to_dataset_video(first_vid)
+    else:
+        stream_mgr.switch_source(source)
     return {"status": "success", "active_source": source}
+
+
+@app.get("/api/dataset_videos")
+async def get_dataset_videos():
+    """List all available CCTV Shoplifting Dataset videos with status."""
+    dataset_dir = config.BASE_DIR / "CCTV_Shoplifting_Dataset" / "videos"
+    if not dataset_dir.exists():
+        return {"videos": [], "active_video": None, "auto_cycle": False}
+        
+    videos = sorted([f.name for f in dataset_dir.glob("*.mp4")])
+    annotated_dir = config.BASE_DIR / "data" / "annotated_cctv"
+    
+    video_list = []
+    for f in videos:
+        is_shop = "shoplifting" in f.lower() and "not_" not in f.lower()
+        annotated_file = f"{Path(f).stem}_sentinel_hud.mp4"
+        has_annotated = (annotated_dir / annotated_file).exists()
+        video_list.append({
+            "filename": f,
+            "label": "Shoplifting Incident" if is_shop else "Normal Customer Behavior",
+            "is_shoplifting": is_shop,
+            "annotated_url": f"/annotated_videos/{annotated_file}" if has_annotated else None,
+            "is_active": (stream_mgr.current_dataset_video == f and stream_mgr.current_source_type in ("file", "dataset"))
+        })
+    return {
+        "videos": video_list,
+        "active_video": stream_mgr.current_dataset_video,
+        "auto_cycle": stream_mgr.auto_cycle
+    }
+
+
+@app.post("/api/select_dataset_video")
+async def select_dataset_video(video: str = Form(...)):
+    """Switch surveillance feed to a specific CCTV Shoplifting Dataset video."""
+    dataset_dir = config.BASE_DIR / "CCTV_Shoplifting_Dataset" / "videos"
+    target_path = dataset_dir / video
+    if not target_path.exists():
+        raise HTTPException(status_code=404, detail=f"Video '{video}' not found in CCTV dataset.")
+        
+    stream_mgr.switch_to_dataset_video(video)
+    return {"status": "success", "active_video": video, "message": f"Now streaming CCTV video: {video}"}
+
+
+@app.post("/api/toggle_auto_cycle")
+async def toggle_auto_cycle_endpoint(enable: bool = Form(...)):
+    """Toggle auto-cycling sequentially through all CCTV dataset videos."""
+    stream_mgr.auto_cycle = enable
+    if enable and stream_mgr.current_source_type not in ("file", "dataset") and stream_mgr.dataset_videos:
+        stream_mgr.switch_to_dataset_video(stream_mgr.dataset_videos[0])
+    return {"status": "success", "auto_cycle": stream_mgr.auto_cycle}
+
+
+@app.get("/api/cctv_evaluation")
+async def get_cctv_evaluation():
+    """Retrieve full batch evaluation metrics across the CCTV Shoplifting Dataset."""
+    json_path = config.BASE_DIR / "data" / "cctv_evaluation_report.json"
+    if json_path.exists():
+        with open(json_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"error": "Evaluation report not yet generated"}
 
 
 @app.post("/api/upload")

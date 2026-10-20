@@ -1,10 +1,43 @@
+# Virtual Environment
 venv/
+.venv/
+env/
+
+# Python cache & compiled files
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+
+# Environment variables & secrets
 .env
+.env.*
+
+# Large binary model weights
 *.pt
 *.pth
+*.onnx
+*.engine
+
+# Video media files (surveillance streams & clips)
 *.mp4
 *.avi
+*.mov
+*.mkv
+*.webm
 
+# Include benchmark test videos in CCTV_Shoplifting_Dataset/videos/ (11 MB total)
+!CCTV_Shoplifting_Dataset/videos/*.mp4
+
+# Large CCTV image frame extractions (use scripts or download links)
+CCTV_Shoplifting_Dataset/images/
+CCTV_Shoplifting_Dataset/annotated_images/
+CCTV_Shoplifting_Dataset/annotated_videos/
+
+# Runtime evidence snapshots & uploads
+snapshots/*.jpg
+snapshots/*.jpeg
+snapshots/*.png
+!snapshots/.gitkeep
+uploads/*
+!uploads/.gitkeep

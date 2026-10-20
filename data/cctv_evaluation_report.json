@@ -1,0 +1,167 @@
+{
+  "dataset": "CCTV_Shoplifting_Dataset",
+  "timestamp": "2026-10-20 19:45:43",
+  "total_videos": 8,
+  "confusion_matrix": {
+    "true_positives": 4,
+    "true_negatives": 0,
+    "false_positives": 4,
+    "false_negatives": 0
+  },
+  "metrics": {
+    "accuracy": 50.0,
+    "recall": 100.0,
+    "precision": 50.0,
+    "f1_score": 66.7
+  },
+  "video_results": [
+    {
+      "file": "not_shoplifting1.mp4",
+      "ground_truth": "normal",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 14.9,
+      "fps": 9.7,
+      "max_threat": 95.0,
+      "alerts_count": 2,
+      "key_reasons": [
+        "Jacket/chest concealment (49%)",
+        "Reach & Conceal sequence (95%)",
+        "Reach & Conceal sequence (93%)",
+        "Pocket concealment dwell (90%)"
+      ],
+      "annotated_video": "not_shoplifting1_sentinel_hud.mp4"
+    },
+    {
+      "file": "not_shoplifting2.mp4",
+      "ground_truth": "normal",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 14.65,
+      "fps": 9.9,
+      "max_threat": 95.0,
+      "alerts_count": 2,
+      "key_reasons": [
+        "Reach & Conceal sequence (95%)",
+        "Pocket concealment dwell (55%)",
+        "Pocket concealment dwell (90%)",
+        "Reach & Conceal sequence (79%)"
+      ],
+      "annotated_video": "not_shoplifting2_sentinel_hud.mp4"
+    },
+    {
+      "file": "not_shoplifting3.mp4",
+      "ground_truth": "normal",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 16.88,
+      "fps": 8.6,
+      "max_threat": 95.0,
+      "alerts_count": 2,
+      "key_reasons": [
+        "Reach & Conceal sequence (95%)",
+        "Jacket/chest concealment (90%)",
+        "Reach & Conceal sequence (93%)",
+        "Pocket concealment dwell (56%)"
+      ],
+      "annotated_video": "not_shoplifting3_sentinel_hud.mp4"
+    },
+    {
+      "file": "not_shoplifting4.mp4",
+      "ground_truth": "normal",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 14.83,
+      "fps": 9.8,
+      "max_threat": 94.7,
+      "alerts_count": 1,
+      "key_reasons": [
+        "Pocket concealment dwell (49%)",
+        "Reach & Conceal sequence (76%)"
+      ],
+      "annotated_video": "not_shoplifting4_sentinel_hud.mp4"
+    },
+    {
+      "file": "shoplifting1.mp4",
+      "ground_truth": "shoplifting",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 19.09,
+      "fps": 7.6,
+      "max_threat": 95.0,
+      "alerts_count": 4,
+      "key_reasons": [
+        "Suspicious crouching/loitering (54%)",
+        "Reach & Conceal sequence (76%)",
+        "Reach & Conceal sequence (95%)",
+        "Reach & Conceal sequence (75%)",
+        "Jacket/chest concealment (83%)"
+      ],
+      "annotated_video": "shoplifting1_sentinel_hud.mp4"
+    },
+    {
+      "file": "shoplifting2.mp4",
+      "ground_truth": "shoplifting",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 145,
+      "duration_sec": 6.0,
+      "elapsed_sec": 14.38,
+      "fps": 10.1,
+      "max_threat": 95.0,
+      "alerts_count": 2,
+      "key_reasons": [
+        "Reach & Conceal sequence (95%)",
+        "Pocket concealment dwell (90%)"
+      ],
+      "annotated_video": "shoplifting2_sentinel_hud.mp4"
+    },
+    {
+      "file": "shoplifting3.mp4",
+      "ground_truth": "shoplifting",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 241,
+      "duration_sec": 10.0,
+      "elapsed_sec": 26.78,
+      "fps": 9.0,
+      "max_threat": 95.0,
+      "alerts_count": 3,
+      "key_reasons": [
+        "Reach & Conceal sequence (95%)",
+        "Jacket/chest concealment (90%)",
+        "Pocket concealment dwell (90%)"
+      ],
+      "annotated_video": "shoplifting3_sentinel_hud.mp4"
+    },
+    {
+      "file": "shoplifting4.mp4",
+      "ground_truth": "shoplifting",
+      "predicted_label": "shoplifting",
+      "predicted_alert": true,
+      "frames_total": 241,
+      "duration_sec": 10.0,
+      "elapsed_sec": 24.92,
+      "fps": 9.7,
+      "max_threat": 95.0,
+      "alerts_count": 3,
+      "key_reasons": [
+        "Reach & Conceal sequence (80%)",
+        "Pocket concealment dwell (66%)",
+        "Pocket concealment dwell (90%)",
+        "Reach & Conceal sequence (89%)"
+      ],
+      "annotated_video": "shoplifting4_sentinel_hud.mp4"
+    }
+  ]
+}
